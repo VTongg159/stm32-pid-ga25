@@ -1,6 +1,5 @@
 #ifndef PID_H
 #define PID_H
-#include <stdint.h>
 
 typedef struct {
     float Kp, Ki, Kd;
