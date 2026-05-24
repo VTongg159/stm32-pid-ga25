@@ -1,6 +1,6 @@
 #include "pid.h"
 
-// ham khoi tao tham so pid
+// khoi tao tham so pid
 void PID_Init(PID_Controller_t *pid, float p, float i, float d, float max, float min)
 {
     pid->Kp = p;
@@ -16,8 +16,7 @@ void PID_Init(PID_Controller_t *pid, float p, float i, float d, float max, float
 // ham tinh toan pid
 float PID_Compute(PID_Controller_t *pid, float current_value, float dt)
 {
-    if(dt <= 0.0f)
-        return 0.0f;
+    if(dt <= 0.0f) return 0.0f;
 
     float error = pid->setpoint - current_value;
 
@@ -26,9 +25,7 @@ float PID_Compute(PID_Controller_t *pid, float current_value, float dt)
 
     // I
     pid->integral_sum += error * dt;
-
-    float Integral =
-        pid->Ki * pid->integral_sum;
+    float Integral = pid->Ki * pid->integral_sum;
 
     // Anti-windup
     if(Integral > pid->out_max)
@@ -57,12 +54,11 @@ float PID_Compute(PID_Controller_t *pid, float current_value, float dt)
     // PID output
     float output = Proportional + Integral + Derivative;
 
-    // gioi han pid
+    // gioi han output pid
     if(output > pid->out_max) output = pid->out_max;
-    if(output < pid->out_min)  output = pid->out_min;
+    if(output < pid->out_min) output = pid->out_min;
 
     // Update previous error
     pid->prev_error = error;
-
     return output;
 }

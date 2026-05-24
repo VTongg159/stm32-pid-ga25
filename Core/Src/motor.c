@@ -1,58 +1,79 @@
 #include "motor.h"
 
 void Motor_Init(void) {
-    // 1. Bật Clock cho GPIOA và Timer 1
-    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
-    RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+    // cap xung clock cho GPIOA va timer1
+	RCC->AHB1ENR |= (1 << 0);
+	RCC->APB2ENR |= (1 << 0);
 
-    // 2. Cấu hình PA8 thành chức năng thay thế (AF1 - TIM1_CH1)
-    GPIOA->MODER &= ~(3U << (8 * 2));
-    GPIOA->MODER |=  (2U << (8 * 2)); // AF mode
-    GPIOA->AFR[1] &= ~(0xFU << (0 * 4)); // PA8 thuộc AFR[1] (High Register)
-    GPIOA->AFR[1] |=  (1U << (0 * 4));  // AF1
+    // cau hinh PA8 o che do alternate
+	GPIOA->MODER &= ~(1<<16);
+	GPIOA->MODER |= (1 << 17);
+	GPIOA->AFR[1] &= ~(0xF << 0);
+	GPIOA->AFR[1] |= (1 << 0);    //AF1:0001
 
-    // 3. Cấu hình PA9 và PA10 thành Output thường (Điều khiển chiều IN1, IN2)
-    GPIOA->MODER &= ~((3U << (9 * 2)) | (3U << (10 * 2)));
-    GPIOA->MODER |=  ((1U << (9 * 2)) | (1U << (10 * 2))); // Output mode (01)
 
-    // 4. Cấu hình Timer 1 sinh xung PWM Tần số 20 kHz
-    TIM1->PSC = 0;             // Không chia tần (Prescaler = 0), Timer chạy ở 100MHz
-    TIM1->ARR = 4999;          // Tần số = 100MHz / (4999 + 1) = 20kHz
-    TIM1->CCR1 = 0;            // Mặc định Duty Cycle = 0%
+    // cau hinh output cho PA9 va PA10
 
-    // 5. Cấu hình Output Compare Mode cho Channel 1: PWM Mode 1 (Thanh ghi CCMR1)
-    TIM1->CCMR1 &= ~TIM_CCMR1_OC1M;
-    TIM1->CCMR1 |=  (6U << TIM_CCMR1_OC1M_Pos); // 6: PWM mode 1 (Đầu ra tích cực khi CNT < CCR1)
-    TIM1->CCMR1 |= TIM_CCMR1_OC1PE;            // Bật bộ đệm Preload cho CCR1
+	// PA9
+	GPIOA->MODER |= (1 << 18);
+	GPIOA->MODER &= ~(1 << 19);
+	//PA10
+	GPIOA->MODER |= (1 << 20);
+	GPIOA->MODER &= ~(1 << 21);
 
-    // 6. Cho phép xuất đầu ra Channel 1 (CCER) và bật ngõ ra chính (MOE - Main Output Enable)
-    TIM1->CCER |= TIM_CCER_CC1E;
-    TIM1->BDTR |= TIM_BDTR_MOE;
 
-    // 7. Kích hoạt Timer 1
-    TIM1->CR1 |= TIM_CR1_ARPE | TIM_CR1_CEN; // Bật Auto-reload preload và Enable Counter
+    // cau hinh timer1 xuat xung pwm tan so 10khz
+    TIM1->PSC = 9;
+    TIM1->ARR = 999;   // f = 10MHz / (999 + 1) = 10kHz
+    TIM1->CCR1 = 0;
+
+    //cau hinh output compare mode cho channel 1
+    TIM1->CCMR1 &= ~(0x7 << 4);
+    // pwm1: 110
+    TIM1->CCMR1 &= ~(1 << 4);
+    TIM1->CCMR1 |= (1 << 5);
+    TIM1->CCMR1 |= (1 << 6);
+
+    //bat bo dem Preload cho CCR1
+    TIM1->CCMR1 |= (1 << 3);
+
+    // cho phep xuat dau ra  channel 1 (CCER)
+    TIM1->CCER |= (1 << 0);
+
+    //bat ngo ra chinh (MOE - Main Output Enable)
+    TIM1->BDTR |= (1 << 15);
+
+    // Auto-reload preload
+  	TIM1->CR1 |= (1 << 7);
+
+    // counter enable
+    TIM1->CR1 |= (1 << 0);
+
+    //force update event
+    TIM1->EGR |= (1 << 0);
 }
 
 void Motor_SetSpeed(int16_t speed) {
-    // Giới hạn dải băm xung trong khoảng giá trị ARR (-4999 đến 4999)
-    if (speed > 4999)  speed = 4999;
-    if (speed < -4999) speed = -4999;
+    // gioi han bam xung pwm trong khoang ARR
+    if (speed > 999)  speed = 999;
+    if (speed < -999) speed = -999;
 
     if (speed >= 0) {
-        // Quay thuận: IN1 = 1, IN2 = 0
-        GPIOA->ODR |=  (1U << 9);
-        GPIOA->ODR &= ~(1U << 10);
+        // Quay thuan: IN1 = 1, IN2 = 0
+        GPIOA->ODR |=  (1 << 9);
+        GPIOA->ODR &= ~(1 << 10);
         TIM1->CCR1 = speed;
     } else {
-        // Quay nghịch: IN1 = 0, IN2 = 1
-        GPIOA->ODR &= ~(1U << 9);
-        GPIOA->ODR |=  (1U << 10);
-        TIM1->CCR1 = -speed; // Duty cycle luôn dương
+        // Quay nghich: IN1 = 0, IN2 = 1
+        GPIOA->ODR &= ~(1 << 9);
+        GPIOA->ODR |=  (1 << 10);
+        TIM1->CCR1 = -speed;
     }
 }
 
 void Motor_Brake(void) {
-    // Dừng khẩn cấp: IN1 = 0, IN2 = 0
-    GPIOA->ODR &= ~((1U << 9) | (1U << 10));
+    // dung khan cap: IN1 = 0, IN2 = 0
+    GPIOA->ODR &= ~(1 << 9);
+    GPIOA->ODR &= ~(1 << 10);
     TIM1->CCR1 = 0;
 }
