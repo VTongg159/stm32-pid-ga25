@@ -65,3 +65,12 @@ uint8_t Check_Sample_Time(uint32_t sample_time_ms)
     }
     return 0;
 }
+
+uint32_t Get_Tick(void) {
+    return tick_ms;
+}
+
+void Delay_ms(uint32_t ms) {
+    uint32_t start_time = Get_Tick();
+    while ((Get_Tick() - start_time) < ms);
+}
