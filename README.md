@@ -44,6 +44,4 @@ Hệ thống được thiết kế theo cấu trúc điều khiển phản hồi
 │   └── main.c                   # Vòng lặp Super-loop phân mảng thời gian
 │
 └── Software_CSharp_HMI/         # Thư mục dự án Windows Forms App (C#)
-    ├── PID_Tuner_App.sln        # File Solution của Visual Studio
     ├── Form1.cs                 # Xử lý logic giao diện, xử lý luồng nhận dữ liệu
-    └── Form1.Designer.cs        # Định nghĩa các thành phần đồ họa (Chart, Buttons)
