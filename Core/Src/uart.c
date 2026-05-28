@@ -111,7 +111,7 @@ void USART2_IRQHandler(void) {
         if (c == '\n' || c == '\r') {
             if (rx_index > 0) {
                 rx_buffer[rx_index] = '\0';
-                rx_ready = 1;    // Báo hiệu đã có lệnh
+                rx_ready = 1; // bao da co lenh
                 rx_index = 0;
             }
         } else {
@@ -128,6 +128,6 @@ uint8_t UART_IsCommandReady(void) {
 void UART_GetCommand(char *out_buf) {
     if (rx_ready) {
         strncpy(out_buf, (char*)rx_buffer, 50);
-        rx_ready = 0; // Xóa cờ sau khi main đã lấy data
+        rx_ready = 0; // xoa co sau khi main da lay data
     }
 }

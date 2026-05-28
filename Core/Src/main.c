@@ -4,14 +4,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// Module cua ban
+// Module dieu khien
 #include "system.h"
 #include "motor.h"
 #include "encoder.h"
 #include "pid.h"
 #include "uart.h"
 
-// Module cua Thanh vien 2
+// Module giao dien
 #include "globals.h"
 #include "hmi_gpio.h"
 #include "buttons.h"
@@ -21,7 +21,7 @@
 #define SAMPLE_TIME_MS  10
 #define SAMPLE_TIME_SEC 0.01f
 
-// Khai bao bien toan cuc (Dung chung qua globals.h)
+// Khai bao bien toan cuc
 volatile uint8_t system_run  = 0;
 volatile float   target_rpm  = 100.0f;
 volatile uint8_t buzzer_flag = 0;
@@ -77,14 +77,14 @@ int main(void)
 
     while (1)
     {
-        // 1. Kiem tra lenh C#
+        //  Kiem tra lenh C#
         if (UART_IsCommandReady()) {
             char cmd_copy[50];
             UART_GetCommand(cmd_copy);
             Process_RX_Command(cmd_copy);
         }
 
-        // 2. Coi Buzzer khong giam long CPU
+        // Coi Buzzer khong giam long CPU
         if (buzzer_flag && !buzzer_active) {
             Buzzer_Set(1);
             buzzer_start = Get_Tick();
@@ -96,9 +96,8 @@ int main(void)
             buzzer_active = 0;
         }
 
-        // 3. Vong lap loi: Dieu khien PID dung 10ms
-        // (Ham nay cua ban van duoc giu ton ton tuyet doi)
-        if (Check_Sample_Time(SAMPLE_TIME_MS)) // Trong system.c da ep 10ms
+        //  Vong lap core: dieu khien PID dung 10ms
+        if (Check_Sample_Time(SAMPLE_TIME_MS)) //
         {
             LED_Update_State();
 
@@ -111,7 +110,7 @@ int main(void)
                 Motor_SetSpeed(pwm_output);
             } else {
                 Motor_SetSpeed(0);
-                speed_pid.integral_sum = 0.0f; // Reset cho PID truyen thong
+                speed_pid.integral_sum = 0.0f; // Reset cho PID
                 pwm_output = 0;
             }
 

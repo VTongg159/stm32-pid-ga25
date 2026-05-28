@@ -1,31 +1,45 @@
 #include "system.h"
 #include "stm32f411xe.h"
-
-// dinh nghia chu ky lay mau he thong (10ms)
-#define SYSTEM_SAMPLE_TIME_MS  10
-
-// bien static volatile chi co the truy cap trong file system.c
+#define SYSTEM_SAMPLE_TIME_MS  10 //chu ki lay mau he thong
 static volatile uint32_t tick_ms = 0;
 
 // cau hinh clock 100MHz tu nguon noi HSI 16MHz
 void SystemClock_Config_100MHz(void)
 {
-    // bat nguon noi HSI
-    RCC->CR |= (1 << 0);
+    RCC->CR |= (1 << 0); // bat bo dao dong noi toc do cao
     while (!(RCC->CR & (1 << 1))); // cho HSI on dinh
 
-    // bat clock cho power interface de cau hinh dien ap loi
+    // bat clock cho power interface de cau hinh dien ap loi cpu
     RCC->APB1ENR |= (1 << 28);
 
-    // Flash Latency: 3 wait states cho vung chay 100MHz, bat prefetch va cache
-    FLASH->ACR = (1 << 10) | (1 << 9) | (1 << 8) | (3 << 0);
+    // cau hinh do tre la 3 chu ky cho 100MHz
+    FLASH->ACR &= ~(0xF << 0);
+    FLASH->ACR |= (3 << 0);
+    FLASH->ACR |= (1 << 8); //Prefetch enable
+    FLASH->ACR |= (1 << 9); // Instruction cache enable
+    FLASH->ACR |= (1 << 10); // Data cache enable
 
-    // cau hinh bo chia Prescalers: AHB = /1 (100MHz); APB1 = /2 (50MHz); APB2 = /1 (100MHz)
-    RCC->CFGR &= ~((0xF << 4) | (0x7 << 10) | (0x7 << 13));
-    RCC->CFGR |=  (0 << 4) | (4 << 10) | (0 << 13);
+    // cau hinh bo chia cho  AHB 100MHz
+    RCC->CFGR &= ~(0xF << 4);
+    RCC->CFGR |=  (0 << 4); // khong chia xung clock
+    // cau hinh bo chi cho APB1 50MHz
+    RCC->CFGR &= ~(0x7 << 10);
+    RCC->CFGR |=  (4 << 10); // chia 2
+    // cau hinh bo chia cho APB2 100MHz
+    RCC->CFGR &= ~(0x7 << 13);
+    RCC->CFGR |=  (0 << 13); // khong chia
 
-    // cau hinh tham so PLL: M=8, N=100, P=2 (P=00 trong thanh ghi), SRC=HSI (SRC=0)
-    RCC->PLLCFGR = (8 << 0) | (100 << 6) | (0 << 16) | (0 << 22);
+    // cau hinh PPL
+    RCC->PLLCFGR &= ~(0x3F << 0);
+    RCC->PLLCFGR |= (8 << 0); // PLLM = 8
+    RCC->PLLCFGR &= ~(0x1FF << 6);
+    RCC->PLLCFGR |= (100 << 6); // PLLN = 100
+    RCC->PLLCFGR &= ~(0x3 << 16);
+    RCC->PLLCFGR |= (0 << 16);  // PLLP = 0
+    RCC->PLLCFGR &= ~(1 << 22);
+    RCC->PLLCFGR |= (0 << 22);   // PLLSRC = 0
+    RCC->PLLCFGR &= ~(0xF << 24);
+    RCC->PLLCFGR |= (4 << 24);   //PLLQ = 4
 
     // bat bo nhan tan PLL
     RCC->CR |= (1 << 24);
@@ -40,21 +54,18 @@ void SystemClock_Config_100MHz(void)
 // cau hinh SysTick tao ngat moi 1ms
 void SysTick_Init(void)
 {
-    // Clock he thong = 100MHz -> 1ms can 100,000 thoi quet (ticks)
-    SysTick->LOAD = 100000 - 1;
+    SysTick->LOAD = 100000 - 1;// Clock he thong = 100MHz -> 1ms can 100,000 ticks
     SysTick->VAL  = 0;
-
-    // bit 2: chon nguon System Clock; bit 1: cho phep ngat; bit 0: bat bo dem
     SysTick->CTRL = (1 << 2) | (1 << 1) | (1 << 0);
 }
 
-// ham phuc vu ngat SysTick (He thong tu dong goi moi 1ms)
+// ham phuc vu ngat SysTick
 void SysTick_Handler(void)
 {
     tick_ms++;
 }
 
-// ham kiem tra dinh thoi khong block (Non-blocking sample check)
+// ham kiem tra dinh thoi khong block
 uint8_t Check_Sample_Time(uint32_t sample_time_ms)
 {
     static uint32_t last_tick = 0;
