@@ -1,5 +1,9 @@
 #include "uart.h"
 
+static volatile char rx_buffer[50];
+static volatile uint8_t rx_index = 0;
+static volatile uint8_t rx_ready = 0;
+
 void UART_Init(void) {
     //cap xung clock cho GPIOA va USART2
     RCC->AHB1ENR |= (1 << 0 );
@@ -92,5 +96,38 @@ void UART_SendNumber(int32_t num) {
     // In nnguoc mang ra UART
     while (i > 0) {
         UART_SendChar(buffer[--i]);
+    }
+}
+
+void UART_RX_Interrupt_Enable(void) {
+    USART2->CR1 |= (1 << 5);              // RXNEIE = 1
+    NVIC_SetPriority(USART2_IRQn, 1);
+    NVIC_EnableIRQ(USART2_IRQn);
+}
+
+void USART2_IRQHandler(void) {
+    if (USART2->SR & (1 << 5)) {
+        char c = (char)(USART2->DR & 0xFF);
+        if (c == '\n' || c == '\r') {
+            if (rx_index > 0) {
+                rx_buffer[rx_index] = '\0';
+                rx_ready = 1;    // Báo hiệu đã có lệnh
+                rx_index = 0;
+            }
+        } else {
+            if (rx_index < 49) rx_buffer[rx_index++] = c;
+            else rx_index = 0;
+        }
+    }
+}
+
+uint8_t UART_IsCommandReady(void) {
+    return rx_ready;
+}
+
+void UART_GetCommand(char *out_buf) {
+    if (rx_ready) {
+        strncpy(out_buf, (char*)rx_buffer, 50);
+        rx_ready = 0; // Xóa cờ sau khi main đã lấy data
     }
 }

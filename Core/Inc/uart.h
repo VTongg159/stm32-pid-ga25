@@ -16,4 +16,8 @@ void UART_SendString(const char* str);
 // Gửi mot so nguyen 32 bit
 void UART_SendNumber(int32_t num);
 
+void UART_RX_Interrupt_Enable(void);
+uint8_t UART_IsCommandReady(void);
+void UART_GetCommand(char *out_buf);
+
 #endif
